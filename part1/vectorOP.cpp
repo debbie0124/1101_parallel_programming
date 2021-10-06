@@ -42,15 +42,79 @@ void absVector(float *values, float *output, int N)
 
 void clampedExpVector(float *values, int *exponents, float *output, int N)
 {
-  //
-  // PP STUDENTS TODO: Implement your vectorized version of
-  // clampedExpSerial() here.
-  //
-  // Your solution should work for any value of
-  // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
-  //
+  __pp_vec_float x, result;
+  __pp_vec_int y, count;
+  __pp_vec_int zero = _pp_vset_int(0);
+  __pp_vec_int one_int = _pp_vset_int(1);
+  __pp_vec_float one_float = _pp_vset_float(1.f);
+  __pp_vec_float exceed = _pp_vset_float(9.999999f);
+  __pp_mask maskAll, maskIsZero, maskIsNotZero, maskCount, maskIsExceeded, maskBound, maskOutOfBound;
+  float exceed_value = 9.999999f;
+  int flag = 0;
+
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
+    // Set mask size
+    if ((i + VECTOR_WIDTH) > N) {
+      maskAll = _pp_init_ones(N - i);
+      maskOutOfBound = _pp_mask_not(maskAll);
+      flag = 1;
+    }
+    else {
+      maskAll = _pp_init_ones(VECTOR_WIDTH);
+    }
+
+    // // Set mask size
+    // maskAll = _pp_init_ones();
+    // maskBound = _pp_init_ones(N % VECTOR_WIDTH);
+    // maskOutOfBound = _pp_mask_not(maskBound);  
+    // maskIsZero = _pp_init_ones(0);
+    
+    // Load vector of values from contiguous memory addresses
+    _pp_vload_float(x, values + i, maskAll);  // float x = values[i];
+
+    // Load vector of exponents from contiguous memory addresses
+    _pp_vload_int(y, exponents + i, maskAll);  // int y = exponents[i];
+
+    // Set mask according to predicate
+    _pp_veq_int(maskIsZero, y, zero, maskAll); // if (y == 0) {
+
+    // Execute instruction using mask ("if" clause)
+    // Write results back to memory with mask
+    _pp_vstore_float(output + i, one_float, maskIsZero);  // output[i] = 1.f;
+
+    // Inverse maskIsNegative to generate "else" mask
+    maskIsNotZero = _pp_mask_not(maskIsZero);  // } else {
+
+    // Execute instructions ("else" clause)
+    // Set value from x to result with mask
+    _pp_vmove_float(result, x, maskIsNotZero);  // float result = x;
+
+    // Initial vector of count with mask
+    _pp_vsub_int(count, y, one_int, maskIsNotZero);  // int count = y - 1;
+
+    // Set mask for doing multiplication
+    _pp_vgt_int(maskCount, count, zero, maskIsNotZero);
+    
+    // Execution multication until all finished
+    while (_pp_cntbits(maskCount)) {  // while (count > 0) {
+      _pp_vmult_float(result, result, x, maskCount);  // result *= x;
+      _pp_vsub_int(count, count, one_int, maskIsNotZero);  // count--; }
+
+      // Update mask for vector of count
+      _pp_vgt_int(maskCount, count, zero, maskIsNotZero);
+    }
+
+    // Set mask for exceed value
+    _pp_vgt_float(maskIsExceeded, result, exceed, maskIsNotZero);  //if (result > 9.999999f) {
+
+    // Set value for exceed value with mask
+    _pp_vset_float(result, exceed_value, maskIsExceeded);  // result = 9.999999f; }
+    if (flag)// if ((i + VECTOR_WIDTH) > N)
+      _pp_vset_float(result, 0, maskOutOfBound);
+
+    // Write remaining results back to memory
+    _pp_vstore_float(output + i, result, maskIsNotZero);  // output[i] = result; }
   }
 }
 
