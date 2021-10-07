@@ -281,7 +281,7 @@ template void _pp_veq<int>(__pp_mask &maskResult, __pp_vec_int &veca, __pp_vec_i
 void _pp_veq_float(__pp_mask &maskResult, __pp_vec_float &veca, __pp_vec_float &vecb, __pp_mask &mask) { _pp_veq<float>(maskResult, veca, vecb, mask); }
 void _pp_veq_int(__pp_mask &maskResult, __pp_vec_int &veca, __pp_vec_int &vecb, __pp_mask &mask) { _pp_veq<int>(maskResult, veca, vecb, mask); }
 
-// hadd: 
+// hadd: [2 * 1] + [2 * i + 1]
 template <typename T>
 void _pp_hadd(__pp_vec<T> &vecResult, __pp_vec<T> &vec)
 {
@@ -297,7 +297,7 @@ template void _pp_hadd<float>(__pp_vec_float &vecResult, __pp_vec_float &vec);
 
 void _pp_hadd_float(__pp_vec_float &vecResult, __pp_vec_float &vec) { _pp_hadd<float>(vecResult, vec); }
 
-// interleave: 
+// interleave: [0] [2] [0] [2]
 template <typename T>
 void _pp_interleave(__pp_vec<T> &vecResult, __pp_vec<T> &vec)
 {

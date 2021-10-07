@@ -48,28 +48,16 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
   __pp_vec_int one_int = _pp_vset_int(1);
   __pp_vec_float one_float = _pp_vset_float(1.f);
   __pp_vec_float exceed = _pp_vset_float(9.999999f);
-  __pp_mask maskAll, maskIsZero, maskIsNotZero, maskCount, maskIsExceeded, maskBound, maskOutOfBound;
+  __pp_mask maskAll, maskIsZero, maskIsNotZero, maskCount, maskIsExceeded;
   float exceed_value = 9.999999f;
   int flag = 0;
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
     // Set mask size
-    if ((i + VECTOR_WIDTH) > N) {
-      maskAll = _pp_init_ones(N - i);
-      maskOutOfBound = _pp_mask_not(maskAll);
-      flag = 1;
-    }
-    else {
-      maskAll = _pp_init_ones(VECTOR_WIDTH);
-    }
+    maskAll = ((i + VECTOR_WIDTH) > N) ? _pp_init_ones(N - i) : _pp_init_ones();
+    maskIsZero = _pp_init_ones(0);
 
-    // // Set mask size
-    // maskAll = _pp_init_ones();
-    // maskBound = _pp_init_ones(N % VECTOR_WIDTH);
-    // maskOutOfBound = _pp_mask_not(maskBound);  
-    // maskIsZero = _pp_init_ones(0);
-    
     // Load vector of values from contiguous memory addresses
     _pp_vload_float(x, values + i, maskAll);  // float x = values[i];
 
@@ -85,6 +73,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 
     // Inverse maskIsNegative to generate "else" mask
     maskIsNotZero = _pp_mask_not(maskIsZero);  // } else {
+    maskIsNotZero = _pp_mask_and(maskAll, maskIsNotZero);  // deal with out of bound
 
     // Execute instructions ("else" clause)
     // Set value from x to result with mask
@@ -110,8 +99,6 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 
     // Set value for exceed value with mask
     _pp_vset_float(result, exceed_value, maskIsExceeded);  // result = 9.999999f; }
-    if (flag)// if ((i + VECTOR_WIDTH) > N)
-      _pp_vset_float(result, 0, maskOutOfBound);
 
     // Write remaining results back to memory
     _pp_vstore_float(output + i, result, maskIsNotZero);  // output[i] = result; }
@@ -123,10 +110,8 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 // You can assume VECTOR_WIDTH is a power of 2
 float arraySumVector(float *values, int N)
 {
-
-  //
-  // PP STUDENTS TODO: Implement your vectorized version of arraySumSerial here
-  //
+  __pp_vec_float x;
+  __pp_vec_float sum = _pp_vset_float(0.f);  // float sum = 0;
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
