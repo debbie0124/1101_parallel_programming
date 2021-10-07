@@ -85,7 +85,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
     // Set mask for doing multiplication
     _pp_vgt_int(maskCount, count, zero, maskIsNotZero);
     
-    // Execution multication until all finished
+    // Execute multication until all finished
     while (_pp_cntbits(maskCount)) {  // while (count > 0) {
       _pp_vmult_float(result, result, x, maskCount);  // result *= x;
       _pp_vsub_int(count, count, one_int, maskIsNotZero);  // count--; }
@@ -111,11 +111,25 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 float arraySumVector(float *values, int N)
 {
   __pp_vec_float x;
-  __pp_vec_float sum = _pp_vset_float(0.f);  // float sum = 0;
+  __pp_mask maskAll;
+  int size = VECTOR_WIDTH;
+  float sum = 0.f;  // float sum = 0;
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
-  }
+    maskAll = _pp_init_ones();
 
-  return 0.0;
+    // Load vector of values from contiguous memory addresses
+    _pp_vload_float(x, values + i, maskAll);
+
+    // Execute for loop
+    while (size > 1) {
+      _pp_hadd_float(x, x);
+      _pp_interleave_float(x, x);
+      size /= 2;
+    }
+    sum += x.value[0];
+    size = VECTOR_WIDTH;  // reset size
+  }
+  return sum;
 }
